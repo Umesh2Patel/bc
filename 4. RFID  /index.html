@@ -1,0 +1,175 @@
+<html>
+
+<head>
+  <title>Decentralized Education Nexus</title>
+  <!-- Materialize CSS CDN -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/0.100.2/css/materialize.min.css">
+  <!-- JQuery CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+  <!-- Materialize JS CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/0.100.2/js/materialize.min.js"></script>
+  <!-- Web3.js Local -->
+  <script src="js/web3.js"></script>
+
+  <script>
+    $(document).ready(function() {
+
+      $("#monthGuessBtn").on("click", function() {
+        var rfidVal = $("#rfidIdentifier").val(),
+          timeStamp = $("#timeStamp").val();
+
+        console.log(parseInt(rfidVal), parseInt(timeStamp));
+
+        myContractInstance.pushRFID.sendTransaction(parseInt(rfidVal), parseInt(timeStamp), {
+          from: "0x627306090abab3a6e1400e9345bc60c78a8bef57",
+          gas: "200000"
+        }, function(error, result) {
+          if (!error) {
+            console.log("Hash: " + result)
+          } else {
+            console.error(error);
+          }
+        })
+
+        $("#rfidIdentifier").val('');
+        $("#timeStamp").val('');
+
+      });
+
+      //We are checking if web3 is already connected to the network
+      if (typeof web3 !== 'undefined') {
+        web3 = new Web3(web3.currentProvider);
+      } else {
+        //If it is not connected to the server then connect to the server
+        web3 = new Web3(new Web3.providers.HttpProvider("http://localhost:7545"));
+      }
+
+      var abi = [{
+          "constant": true,
+          "inputs": [{
+            "name": "_recordNumber",
+            "type": "uint256"
+          }],
+          "name": "getRecordNumber",
+          "outputs": [{
+            "name": "",
+            "type": "uint256[2]"
+          }],
+          "payable": false,
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "constant": true,
+          "inputs": [],
+          "name": "getRecordCount",
+          "outputs": [{
+            "name": "",
+            "type": "uint256"
+          }],
+          "payable": false,
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "anonymous": false,
+          "inputs": [{
+              "indexed": false,
+              "name": "timestamp",
+              "type": "uint256"
+            },
+            {
+              "indexed": false,
+              "name": "id",
+              "type": "uint256"
+            }
+          ],
+          "name": "AddedID",
+          "type": "event"
+        },
+        {
+          "constant": false,
+          "inputs": [{
+              "name": "timestamp",
+              "type": "uint256"
+            },
+            {
+              "name": "id",
+              "type": "uint256"
+            }
+          ],
+          "name": "pushRFID",
+          "outputs": [],
+          "payable": false,
+          "stateMutability": "nonpayable",
+          "type": "function"
+        }
+      ]
+
+      var MyContract = web3.eth.contract(abi);
+      //Contract Address below
+      var myContractInstance = MyContract.at("0x30753e4a8aad7f8597332e813735def5dd395028");
+
+      var myEvent = myContractInstance.AddedID({}, {
+        fromBlock: 0,
+        toBlock: 'latest'
+      });
+
+      myEvent.watch(function(error, result) {
+        $("#chainData").append(`
+                  <tr>
+                    <td>${result.args.timestamp.c[0]}</td>
+                    <td>${result.args.id.c[0]}</td>
+                  </tr>
+            `);
+      });
+
+
+      //First Line will pull up all events
+      //var myEvent = myContractInstance.AddedID({},{fromBlock: 0, toBlock: 'latest'});
+      //This line will only pull blocks as they're happening (it will pull up last one if we're on same block as an event)
+      // var myEvent = myContractInstance.AddedID();
+      //
+      // myEvent.watch(function(error, result){
+      //     console.log("ID Added");
+      //     result = JSON.stringify(arguments)
+      //     console.log(result);
+      // });
+      //
+    });
+  </script>
+
+</head>
+
+<body>
+  <nav>
+    <div class="nav-wrapper">
+      <a href="#" class="brand-logo">The DEN</a>
+      <ul id="nav-mobile" class="right hide-on-med-and-down">
+      </ul>
+    </div>
+  </nav>
+
+  <div class="container">
+
+    <h1 class="center-align">RFID DATA ON BLOCKCHAIN</h1>
+    <input placeholder="ID# Here" type="text" id="rfidIdentifier" />
+    <input placeholder="Time in UNIX (only digits)" type="text" id="timeStamp" />
+    <a class="waves-effect waves-light btn" id="monthGuessBtn">Enter</a>
+    <h5 class="center-align">DATA ON THE CHAIN</h5>
+
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Timestamp</th>
+        </tr>
+      </thead>
+
+      <tbody id="chainData">
+      </tbody>
+    </table>
+  </div>
+
+</body>
+</html>

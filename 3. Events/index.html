@@ -1,0 +1,238 @@
+<html>
+
+<head>
+  <title>Decentralized Education Nexus</title>
+  <!-- Materialize CSS CDN -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/0.100.2/css/materialize.min.css">
+  <!-- JQuery CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+  <!-- Materialize JS CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/0.100.2/js/materialize.min.js"></script>
+  <!-- Web3.js Local -->
+  <script src="js/web3.js"></script>
+
+  <script>
+    $(document).ready(function() {
+
+      console.log('Connecting via Web3');
+      //We are checking if web3 is already connected to the network
+      if (typeof web3 !== 'undefined') {
+        web3 = new Web3(web3.currentProvider);
+      } else {
+        //If it is not connected to the server then connect to the server
+        web3 = new Web3(new Web3.providers.HttpProvider("http://127.0.0.1:7545"));
+      }
+
+      // Check the connection
+      if (!web3.isConnected()) {
+        console.error("Not connected");
+      }
+
+      console.log('Web3 Object: ', web3);
+      console.log('Version of Web3 Object: ', web3.version);
+
+      //Displaying IP
+      $("#ipaddress").html(web3.currentProvider.host);
+
+
+
+
+      var account = web3.eth.accounts[0],
+        network = web3.version.network,
+        accountInterval = setInterval(function() {
+          if (web3.version.network !== network) {
+            account = web3.eth.accounts[0];
+          }
+        }, 100);
+
+      console.log(account);
+      $("#address").html(account);
+
+      //Put Any Address Here
+      var balance = web3.eth.getBalance(account);
+      console.log('Balance Object: ', balance);
+
+      //In Wei
+      $("#balanceWei").html(balance.toString(10));
+      //In Ether
+      $("#balanceEth").html(balance.toString(10) / 1000000000000000000)
+
+
+      var abi = [{
+          "anonymous": false,
+          "inputs": [{
+              "indexed": false,
+              "name": "timestamp",
+              "type": "uint256"
+            },
+            {
+              "indexed": false,
+              "name": "id",
+              "type": "uint256"
+            }
+          ],
+          "name": "AddedID",
+          "type": "event"
+        },
+        {
+          "constant": false,
+          "inputs": [{
+              "name": "timestamp",
+              "type": "uint256"
+            },
+            {
+              "name": "id",
+              "type": "uint256"
+            }
+          ],
+          "name": "pushRFID",
+          "outputs": [],
+          "payable": false,
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "constant": true,
+          "inputs": [],
+          "name": "getAll",
+          "outputs": [{
+            "name": "",
+            "type": "uint256[2][]"
+          }],
+          "payable": false,
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "constant": true,
+          "inputs": [],
+          "name": "getRecordCount",
+          "outputs": [{
+            "name": "",
+            "type": "uint256"
+          }],
+          "payable": false,
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "constant": true,
+          "inputs": [{
+            "name": "_recordNumber",
+            "type": "uint256"
+          }],
+          "name": "getRecordNumber",
+          "outputs": [{
+            "name": "",
+            "type": "uint256[2]"
+          }],
+          "payable": false,
+          "stateMutability": "view",
+          "type": "function"
+        }
+      ]
+
+      console.log('Now Creating Contract Instance')
+      var MyContract = web3.eth.contract(abi);
+      //Contract Address below
+      var myContractInstance = MyContract.at("0x30753e4a8aad7f8597332e813735def5dd395028");
+
+      var myEvent = myContractInstance.AddedID({}, {
+        fromBlock: 0,
+        toBlock: 'latest'
+      });
+
+      myEvent.watch(function(error, result) {
+        console.log("the timestamp is here", result.args.timestamp.c[0], result.args.id.c[0])
+
+        $("#timestamp").html(result.args.timestamp.c[0]);
+        $("#id").html(result.args.id.c[0]);
+      });
+
+    });
+  </script>
+
+</head>
+
+<body>
+  <nav>
+    <div class="nav-wrapper">
+      <a href="#" class="brand-logo">Decentralized Education Nexus</a>
+      <ul id="nav-mobile" class="right hide-on-med-and-down">
+      </ul>
+    </div>
+  </nav>
+
+  <div class="container">
+    <h1 class="center">The DEN</h1>
+
+      <div class="row">
+        <div class="col s12 m6">
+          <div class="card blue-grey darken-1">
+            <div class="card-content white-text">
+              <span class="card-title">Node IP</span>
+              <p id="ipaddress">Node Ip Address, there's an error</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="col s12 m6">
+          <div class="card blue-grey darken-1">
+            <div class="card-content white-text">
+              <span class="card-title">Your Address</span>
+              <p class="flex" id="address">If no address, there's an error</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="col s12 m6">
+          <div class="card blue-grey darken-1">
+            <div class="card-content white-text">
+              <span class="card-title">Total Wei</span>
+              <p class="flex" id="balanceWei">If no balance, there's an error</p>
+            </div>
+          </div>
+        </div>
+
+
+        <div class="col s12 m6">
+          <div class="card blue-grey darken-1">
+            <div class="card-content white-text">
+              <span class="card-title">Total Ether</span>
+              <p class="flex" id="balanceEth">If no balance, there's an error</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="col s12 m6">
+          <div class="card blue-grey darken-1">
+            <div class="card-content white-text">
+              <span class="card-title">Total Records</span>
+              <p class="flex" id="recordCount">If no number, there's an error</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="col s12 m6">
+  <div class="card blue-grey darken-1">
+    <div class="card-content white-text">
+      <span class="card-title">Latest Timestamp</span>
+      <p class="flex" id="timestamp">Make Sure You Push an RFID into the contract</p>
+    </div>
+  </div>
+</div>
+
+<div class="col s12 m6">
+  <div class="card blue-grey darken-1">
+    <div class="card-content white-text">
+      <span class="card-title">Latest ID</span>
+      <p class="flex" id="id">Make Sure You Are Connected To Correct Contract Address</p>
+    </div>
+  </div>
+</div>
+
+  </div>
+
+</body>
+
+</html>
